@@ -1,4 +1,8 @@
 require('dotenv').config();
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
+const multer = require('multer');
+
 const express = require('express');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
@@ -6,11 +10,64 @@ const path = require('path');
 const pdfParse = require('pdf-parse');
 const { Client } = require("@octoai/client");
 const OCTO_TOKEN = process.env.OCTA_TOKEN;
-
 const client = new Client(OCTO_TOKEN);
-const router = express.Router()
+const router = express.Router();
+const bodyParser = require('body-parser');
+// const aws = require('aws-sdk');
+// const multer = require('multer');
+// const multerS3 = require('multer-s3');
 
-const bodyParser = require('body-parser')
+// Initialize S3 client
+const s3Client = new S3Client({
+  region: process.env.REGION,
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY,
+    secretAccessKey: process.env.SECRET_KEY,
+  },
+});
+
+
+
+
+// Helper function to determine folder based on MIME type
+const getFolderPathByMimeType = (mimeType) => {
+  if (mimeType.startsWith("image")) {
+    return "images";
+  } else if (mimeType.startsWith("video")) {
+    return "videos";
+  } else if (mimeType === "application/pdf") {
+    return "pdfs";
+  } else if (mimeType === "application/vnd.ms-excel" || mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+    return "excels";
+  } else {
+    return "other-files";
+  }
+};
+
+// Helper function to upload file to S3
+const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
+  const uploadParams = {
+    Bucket: bucketName,
+    Key: key,
+    Body: fileBuffer,
+    ContentType: mimeType, // Dynamically set the content type based on file MIME type
+    ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
+  };
+
+  // Using the Upload class to handle large file uploads
+  const parallelUploads3 = new Upload({
+    client: s3Client,
+    params: uploadParams,
+  });
+
+  return parallelUploads3.done();
+};
+
+
+// Configure Multer storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
 const UserController = require('../controllers/userctrl')
 const ProjectController = require('../controllers/ProjectController')
 const AssignController = require('../controllers/AssignController')
@@ -21,7 +78,7 @@ const CompanyController = require('../controllers/CompanyController');
 const ChatController = require('../controllers/ChatController');
 
 const authIslogin = require('../middlewares/authIslogin')
-const multer = require('multer');
+
 
 
 router.use(express.json())
@@ -35,22 +92,24 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    let folder = uploadDir; // Set the folder to the volume path for images
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     let folder = uploadDir; // Set the folder to the volume path for images
 
-    cb(null, folder);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
+//     cb(null, folder);
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueName = Date.now() + '-' + file.originalname;
+//     cb(null, uniqueName);
+//   },
+// });
 
-var upload = multer({ storage: storage });
+// var upload = multer({ storage: storage });
 
 
+// Route for file upload
 
+// router.get('/api/check',ChatController.name);
 //chats 
 router.get('/api/getChats/:project_id/:company_id' , authIslogin, ChatController.getChatsByProjectIdAndCompanyId)
 
@@ -70,7 +129,8 @@ router.post('/Login',UserController.loginUserByEmailPass)
 router.post('/register',authIslogin, UserController.adduser)
 router.get('/api/allusers',authIslogin,UserController.getAllUsers) ;
 router.post('/update-user',authIslogin,UserController.updateUserInfo) ;
-router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
+// router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
+router.post("/upload-files/:companyId/:userId",authIslogin, upload.single("file"), UserController.update_user_profile);
 router.post('/upload-video',authIslogin,upload.single("videoName"), UserController.uploadVideo );
 
 

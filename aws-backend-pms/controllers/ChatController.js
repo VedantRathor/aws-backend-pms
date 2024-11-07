@@ -14,7 +14,11 @@ const jwt = require('jsonwebtoken')
 const authIslogin = require('../middlewares/authIslogin');
 const { SERIALIZABLE } = require('sequelize/lib/table-hints');
 
-
+const name  = async(req,res) => {
+    res.json({
+        'working' : 'true'
+    })
+};
 const getChatsByProjectIdAndCompanyId = async (req,res) => {
     try {
          const { project_id , company_id } = req.params ;
@@ -28,5 +32,6 @@ const getChatsByProjectIdAndCompanyId = async (req,res) => {
 }
 
 module.exports = {
-    getChatsByProjectIdAndCompanyId
+    getChatsByProjectIdAndCompanyId,
+    name
 }

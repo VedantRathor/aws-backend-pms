@@ -8,6 +8,7 @@ const server = http.createServer(app);
 
 
 const socket = require('./socket');
+
 const db = require('../models/index');
 const userinfo = db.userinfo
 const project = db.project
@@ -28,7 +29,7 @@ const cors = require('cors')
 
 // const io = new Server(server, {
 //     cors: {
-//         origin: 'http://localhost:5173',
+//         origin: 'https://project-managementt-system.netlify.app',
 //         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 //     }
 // })
@@ -53,7 +54,7 @@ app.use(router);
 
 
 
-
+// console.log(process.env.PORT);
 server.listen(process.env.PORT, () => {
     console.log('Listening OK at 8080')
 })

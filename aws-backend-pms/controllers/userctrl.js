@@ -18,6 +18,17 @@ const authIslogin = require('../middlewares/authIslogin');
 const { SERIALIZABLE } = require('sequelize/lib/table-hints');
 
 
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
+const multer = require('multer');
+const s3Client = new S3Client({
+    region: process.env.REGION,
+    credentials: {
+      accessKeyId: process.env.ACCESS_KEY,
+      secretAccessKey: process.env.SECRET_KEY,
+    },
+  });
+  
 
 // This Method: Registers the user
 const adduser = async (req, res) => {
@@ -156,6 +167,7 @@ const getAllUsers = async(req,res) =>{
  try {
     const userdata = res.locals.user;
     const {company_id} = userdata;
+    // const company_id = 1;
    // Destructure the query parameters from req.query
 const { userName, userOrder, userRole } = req.query;
 
@@ -262,39 +274,121 @@ const uploadVideo = async(req,res) => {
     }
 }
 
+
+const getFolderPathByMimeType = (mimeType) => {
+    if (mimeType.startsWith("image")) {
+      return "images";
+    } else if (mimeType.startsWith("video")) {
+      return "videos";
+    } else if (mimeType === "application/pdf") {
+      return "pdfs";
+    } else if (mimeType === "application/vnd.ms-excel" || mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+      return "excels";
+    } else {
+      return "other-files";
+    }
+  };
+
+  const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
+    const uploadParams = {
+      Bucket: bucketName,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: mimeType, // Dynamically set the content type based on file MIME type
+      ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
+    };
+  
+    // Using the Upload class to handle large file uploads
+    const parallelUploads3 = new Upload({
+      client: s3Client,
+      params: uploadParams,
+    });
+  
+    return parallelUploads3.done();
+  };
+  
+  
+
 const update_user_profile = async (req, res) => {
     try {
-        const userdata = res.locals.user;
-        const { company_id } = userdata;
-        const { role, email } = req.body;
-
-        // Get the filename from the uploaded file
-        let profileImage = req.file ? req.file.filename : null; // Use req.file.filename instead of req.file.originalname
-
-        if (role == 0) {
-            service.failRetrievalResponse(res, 'Please Select Valid Role');
-        } else {
-            const result = await userinfo.findAll({ where: { email: email, company_id: company_id } });
-            if (result.length == 0) {
-                service.failRetrievalResponse(res, 'User Does not Exists');
-            } else {
-                // Update the profile image and other fields if needed
-                await userinfo.update({
-                    profile: profileImage // Save the filename in the database
-                }, {
-                    where: {
-                        user_id: result[0].user_id,
-                        company_id: company_id
-                    }
-                });
-                service.successRetrievalResponse(res, 'Updation Successful');
-            }
-        }
-    } catch (error) {
-        console.log('error in updateUserProfile', error);
+      // Validate inputs
+      const {companyId , userId } = req.params;
+      if (!companyId || !userId || !req.file) {
+        return res.status(400).json({ message: "Invalid input data" });
+      }
+  
+      // Determine folder based on file MIME type
+      const fileCategory = getFolderPathByMimeType(req.file.mimetype);
+      const folderPath = `s3-storage/company/${companyId}/users/${userId}/${fileCategory}`;
+  
+      // Unique file name with timestamp to avoid overwriting
+      const uniqueName = `${Date.now()}-${req.file.originalname}`;
+      const fullPath = `${folderPath}/${uniqueName}`;
+  
+      // Upload file to S3 with dynamically set MIME type
+      await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
+  
+      const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
+    //   let profileImage = req.file ? req.file.filename : null;
+    // want to perfom updating ! 
+      const user = await userinfo.findOne({ where: { company_id : companyId, user_id : userId } });
+      if(user){
+          await userinfo.update({
+              profile: fileUrl // Save the filename in the database
+          }, {
+              where: {
+                  user_id: user.user_id,
+                  company_id: companyId
+              }
+          });
+        res.json({
+            status: "success",
+            message: `${fileUrl} successfully uploaded!`,
+            fileUrl,
+          });
+      }else{
         service.serverSideError(res);
+      }
+      
+    } catch (error) {
+      console.error("Error uploading file to S3:", error);
+      res.status(500).json({ message: "File upload failed" });
     }
-}
+  }
+
+// const update_user_profile = async (req, res) => {
+//     try {
+//         const userdata = res.locals.user;
+//         const { company_id } = userdata;
+//         const { role, email } = req.body;
+
+//         // Get the filename from the uploaded file
+//         let profileImage = req.file ? req.file.filename : null; // Use req.file.filename instead of req.file.originalname
+
+//         if (role == 0) {
+//             service.failRetrievalResponse(res, 'Please Select Valid Role');
+//         } else {
+//             const result = await userinfo.findAll({ where: { email: email, company_id: company_id } });
+//             if (result.length == 0) {
+//                 service.failRetrievalResponse(res, 'User Does not Exists');
+//             } else {
+//                 // Update the profile image and other fields if needed
+//                 await userinfo.update({
+//                     profile: profileImage // Save the filename in the database
+//                 }, {
+//                     where: {
+//                         user_id: result[0].user_id,
+//                         company_id: company_id
+//                     }
+//                 });
+//                 service.successRetrievalResponse(res, 'Updation Successful');
+//             }
+//         }
+//     } catch (error) {
+//         console.log('error in updateUserProfile', error);
+//         service.serverSideError(res);
+//     }
+// }
 
 module.exports = {
     adduser,
