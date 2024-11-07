@@ -50,7 +50,7 @@ const storage = multer.diskStorage({
 var upload = multer({ storage: storage });
 
 
-router.get('/api/check',ChatController.name);
+
 //chats 
 router.get('/api/getChats/:project_id/:company_id' , authIslogin, ChatController.getChatsByProjectIdAndCompanyId)
 
@@ -68,7 +68,7 @@ router.get('/notification/:view',authIslogin, UserController.getNotifications)
 //UserController
 router.post('/Login',UserController.loginUserByEmailPass)
 router.post('/register',authIslogin, UserController.adduser)
-router.get('/api/allusers',UserController.getAllUsers) ;
+router.get('/api/allusers',authIslogin,UserController.getAllUsers) ;
 router.post('/update-user',authIslogin,UserController.updateUserInfo) ;
 router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
 router.post('/upload-video',authIslogin,upload.single("videoName"), UserController.uploadVideo );

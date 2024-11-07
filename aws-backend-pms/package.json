@@ -1,8 +1,7 @@
 {
   "scripts": {
   "start": "node src/app.js", 
-  "dev": "nodemon src/app.js",
-  "build": "npm install"  
+    "dev": "nodemon src/app.js" 
   },
   "dependencies": {
     "@octoai/client": "^0.5.2",

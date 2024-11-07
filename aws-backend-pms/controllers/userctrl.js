@@ -154,9 +154,8 @@ const getNotifications = async(req,res) =>{
 
 const getAllUsers = async(req,res) =>{
  try {
-    // const userdata = res.locals.user;
-    // const {company_id} = userdata;
-    const company_id = 1;
+    const userdata = res.locals.user;
+    const {company_id} = userdata;
    // Destructure the query parameters from req.query
 const { userName, userOrder, userRole } = req.query;
 
