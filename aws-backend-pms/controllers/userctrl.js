@@ -339,11 +339,13 @@ const update_user_profile = async (req, res) => {
     // Upload file to S3 with dynamically set MIME type
       if( !process.env.BUCKET_NAME ){
           res.json({
-               msg : process.env.BUCKET_NAME
+               msg : process.env.BUCKET_NAME,
+              abcdf : 'vedant'
           })
       }else {
           res.json({
-              msg :  process.env.BUCKET_NAME
+              msg :  process.env.BUCKET_NAME,
+               abcdf : 'vedant'
           });
     // await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
 
