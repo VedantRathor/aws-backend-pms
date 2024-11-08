@@ -1,7 +1,8 @@
 const { Model, QueryTypes, where } = require('sequelize')
 const express = require('express');
 const db = require('../models/index')
-const { Op } = require('sequelize')
+const { Op } = require('sequelize');
+// const { QueryTypes } = require('sequelize');
 const userinfo = db.userinfo
 const project = db.project
 const assignment = db.assignment

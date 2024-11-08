@@ -1,5 +1,6 @@
 'use strict';
-const { Op } = require('sequelize')
+const { Op } = require('sequelize');
+const { QueryTypes } = require('sequelize');
 const {
   Model
 } = require('sequelize');
@@ -23,33 +24,117 @@ module.exports = (sequelize, DataTypes) => {
       return task.update({ status: status,updated_by:user_id }, { where: { task_id: task_id , company_id : company_id} });
     }
 
-    static getTaskByProject(project,task,userinfo,project_id,val,company_id){
-      const query = {
-        include: [{
-            model: task,
-
-            include: [{
-                model: userinfo,
-
-            }],
-
-        }],
-        where: {
-            project_id: project_id,
-            company_id:company_id
+    static async getTaskByProject(project,task,userinfo,project_id,val,company_id){
+      let query = `
+      SELECT 
+          p.project_id,
+          p.project_name,
+          t.*,
+          u.name AS task_user_name,
+          u.user_id AS task_user_id,
+          u.profile AS task_user_profile,
+          ui.name AS updation_user_name,
+          ui.user_id AS updation_user_id,
+          ui.profile AS updation_user_profile
+      FROM 
+          projects AS p
+      JOIN 
+          tasks AS t ON t.project_id = p.project_id AND t.company_id = p.company_id
+      LEFT JOIN 
+          userinfos AS u ON u.user_id = t.created_by
+      LEFT JOIN 
+          userinfos AS ui ON ui.user_id = t.updated_by
+      WHERE 
+          p.project_id = :project_id
+          AND p.company_id = :company_id
+      `;
+      if( val === 'pending' || val === 'completed' ) {
+        if( val === 'pending'){
+          query = query + ` AND  t.status = 'pending';`
+        }else{
+          query = query + ` AND t.status = 'approved'`
         }
-   
-      };
-
-      if (val == 'pending' || val == 'completed') {
-          query.include[0].where = {
-              status: val
-          }
+        
       }
-      return project.findAll(query)
+      
+      return await sequelize.query(query, {
+          replacements: { 
+              project_id: project_id, 
+              company_id: company_id, 
+          },
+          type: QueryTypes.SELECT
+      });
+      
+
+      // if (val == 'pending' || val == 'completed') {
+      //     query.include[0].where = {
+      //         status: val
+      //     }
+      // }
+ 
     }
 
-    static searchTaskInProject(project,userinfo,project_id,company_id,taskName,taskStatus,taskOrder){
+    static async searchTaskInProject(project,userinfo,project_id,company_id,taskName,taskStatus,taskOrder){
+
+      let query = `
+        SELECT 
+            p.project_id,
+            p.project_name,
+            t.*,
+            u.name AS task_user_name,
+            u.user_id AS task_user_id,
+            u.profile AS task_user_profile,
+            ui.name AS updation_user_name,
+            ui.user_id AS updation_user_id,
+            ui.profile AS updation_user_profile
+        FROM 
+            projects AS p
+        LEFT JOIN 
+            tasks AS t ON t.project_id = p.project_id 
+            AND t.company_id = p.company_id
+        LEFT JOIN 
+            userinfos AS u ON u.user_id = t.created_by
+        LEFT JOIN 
+            userinfos AS ui ON ui.user_id = t.updated_by
+        WHERE 
+            p.project_id = :project_id
+            AND p.company_id = :company_id
+    `;
+    //         AND (:taskName IS NULL OR t.task_name LIKE CONCAT('%', :taskName, '%'))
+    //         AND (:taskStatus IS NULL OR t.status = :taskStatus)
+    //     ORDER BY 
+    //         CASE WHEN :taskOrder = 1 THEN t.updated_at END DESC,
+    //         CASE WHEN :taskOrder = 2 THEN t.updated_at END ASC;
+    // `;
+       // Add the optional filters for taskName and taskStatus
+      if (taskName) {
+        query += ` AND t.task_name LIKE CONCAT('%', :taskName, '%')`;
+      }
+
+      if (taskStatus) {
+        query += ` AND t.status = :taskStatus`;
+      }
+
+      // Add ordering based on taskOrder
+      if (taskOrder == 1) {
+        query += ` ORDER BY t.updated_at DESC`;
+      } else if (taskOrder == 2) {
+        query += ` ORDER BY t.updated_at ASC`;
+      }
+
+      const results = await sequelize.query(query, {
+          replacements: {
+              project_id,
+              company_id,
+              taskName,
+              taskStatus,
+              taskOrder,
+          },
+          type: QueryTypes.SELECT
+      });
+
+    return results;
+
          // Build the where conditions dynamically
             const taskWhereClause = {};
             const projectWhereClause = {
