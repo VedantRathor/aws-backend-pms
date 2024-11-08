@@ -289,72 +289,85 @@ const getFolderPathByMimeType = (mimeType) => {
     }
   };
 
-  const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
-    const uploadParams = {
-      Bucket: bucketName,
-      Key: key,
-      Body: fileBuffer,
-      ContentType: mimeType, // Dynamically set the content type based on file MIME type
-      ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
-    };
-  
+const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
+  const uploadParams = {
+    Bucket: bucketName,
+    Key: key,
+    Body: fileBuffer,
+    ContentType: mimeType, // Dynamically set the content type based on file MIME type
+    ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
+  };
+
+  try {
     // Using the Upload class to handle large file uploads
     const parallelUploads3 = new Upload({
       client: s3Client,
       params: uploadParams,
     });
-  
-    return parallelUploads3.done();
-  };
-  
+
+    console.log(`Uploading to S3 with key: ${key} and MIME type: ${mimeType}`);
+    await parallelUploads3.done(); // Ensure this completes before proceeding
+    console.log("Upload to S3 completed.");
+  } catch (error) {
+    console.error("Error in uploadToS3:", error);
+    throw new Error("File upload to S3 failed");
+  }
+};
+
   
 
 const update_user_profile = async (req, res) => {
-    try {
-      // Validate inputs
-      const {companyId , userId } = req.params;
-      if (!companyId || !userId || !req.file) {
-        return res.status(400).json({ message: "Invalid input data" });
-      }
-  
-      // Determine folder based on file MIME type
-      const fileCategory = getFolderPathByMimeType(req.file.mimetype);
-      const folderPath = `s3-storage/company/${companyId}/users/${userId}/${fileCategory}`;
-  
-      // Unique file name with timestamp to avoid overwriting
-      const uniqueName = `${Date.now()}-${req.file.originalname}`;
-      const fullPath = `${folderPath}/${uniqueName}`;
-  
-      // Upload file to S3 with dynamically set MIME type
-      await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
-  
-      const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
-    //   let profileImage = req.file ? req.file.filename : null;
-    // want to perfom updating ! 
-      const user = await userinfo.findOne({ where: { company_id : companyId, user_id : userId } });
-      if(user){
-          await userinfo.update({
-              profile: fileUrl // Save the filename in the database
-          }, {
-              where: {
-                  user_id: user.user_id,
-                  company_id: companyId
-              }
-          });
-        res.json({
-            status: "success",
-            message: `${fileUrl} successfully uploaded!`,
-            fileUrl,
-          });
-      }else{
-        service.serverSideError(res);
-      }
-      
-    } catch (error) {
-      console.error("Error uploading file to S3:", error);
-      res.status(500).json({ message: "File upload failed" });
+  try {
+    // Validate inputs
+    const { companyId, userId } = req.params;
+    if (!companyId || !userId || !req.file) {
+      return res.status(400).json({ message: "Invalid input data" });
     }
+
+    // Determine folder based on file MIME type
+    const fileCategory = getFolderPathByMimeType(req.file.mimetype);
+    const folderPath = `s3-storage/company/${companyId}/users/${userId}/${fileCategory}`;
+
+    // Unique file name with timestamp to avoid overwriting
+    const uniqueName = `${Date.now()}-${req.file.originalname}`;
+    const fullPath = `${folderPath}/${uniqueName}`;
+
+    // Log file details before uploading
+    console.log(`Attempting to upload file to S3 bucket with path: ${fullPath}`);
+
+    // Upload file to S3 with dynamically set MIME type
+    await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
+
+    const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
+    console.log("File successfully uploaded, URL:", fileUrl);
+
+    const user = await userinfo.findOne({ where: { company_id: companyId, user_id: userId } });
+    if (user) {
+      await userinfo.update(
+        {
+          profile: fileUrl // Save the filename in the database
+        },
+        {
+          where: {
+            user_id: user.user_id,
+            company_id: companyId
+          }
+        }
+      );
+      res.json({
+        status: "success",
+        message: `${fileUrl} successfully uploaded!`,
+        fileUrl,
+      });
+    } else {
+      res.status(500).json({ message: "User not found in database" });
+    }
+  } catch (error) {
+    console.error("Error uploading file to S3:", error);
+    res.status(500).json({ message: "File upload failed" });
   }
+};
+
 
 // const update_user_profile = async (req, res) => {
 //     try {
