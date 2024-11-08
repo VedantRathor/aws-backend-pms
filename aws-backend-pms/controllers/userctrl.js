@@ -1,3 +1,4 @@
+require('dotenv').config();
 const {getIO} = require('../src/socket');
 
 
@@ -291,7 +292,7 @@ const getFolderPathByMimeType = (mimeType) => {
 
 const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
   const uploadParams = {
-    Bucket: 'aws-pms-storage',
+    Bucket: bucketName,
     Key: key,
     Body: fileBuffer,
     ContentType: mimeType, // Dynamically set the content type based on file MIME type
@@ -339,6 +340,7 @@ const update_user_profile = async (req, res) => {
     await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
 
     const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
+      console.log('>>>>>>',process.env.BUCKET_NAME);
     console.log("File successfully uploaded, URL:", fileUrl);
 
     const user = await userinfo.findOne({ where: { company_id: companyId, user_id: userId } });
