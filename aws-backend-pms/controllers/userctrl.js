@@ -291,7 +291,7 @@ const getFolderPathByMimeType = (mimeType) => {
 
 const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
   const uploadParams = {
-    Bucket: bucketName,
+    Bucket: 'aws-pms-storage',
     Key: key,
     Body: fileBuffer,
     ContentType: mimeType, // Dynamically set the content type based on file MIME type
