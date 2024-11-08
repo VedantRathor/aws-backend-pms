@@ -21,50 +21,50 @@ const bodyParser = require('body-parser');
 // const multerS3 = require('multer-s3');
 
 // Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.REGION,
-  credentials: {
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-  },
-});
+// const s3Client = new S3Client({
+//   region: process.env.REGION,
+//   credentials: {
+//     accessKeyId: process.env.ACCESS_KEY,
+//     secretAccessKey: process.env.SECRET_KEY,
+//   },
+// });
 
 
 
 
 // Helper function to determine folder based on MIME type
-const getFolderPathByMimeType = (mimeType) => {
-  if (mimeType.startsWith("image")) {
-    return "images";
-  } else if (mimeType.startsWith("video")) {
-    return "videos";
-  } else if (mimeType === "application/pdf") {
-    return "pdfs";
-  } else if (mimeType === "application/vnd.ms-excel" || mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-    return "excels";
-  } else {
-    return "other-files";
-  }
-};
+// const getFolderPathByMimeType = (mimeType) => {
+//   if (mimeType.startsWith("image")) {
+//     return "images";
+//   } else if (mimeType.startsWith("video")) {
+//     return "videos";
+//   } else if (mimeType === "application/pdf") {
+//     return "pdfs";
+//   } else if (mimeType === "application/vnd.ms-excel" || mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+//     return "excels";
+//   } else {
+//     return "other-files";
+//   }
+// };
 
 // Helper function to upload file to S3
-const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
-  const uploadParams = {
-    Bucket: bucketName,
-    Key: key,
-    Body: fileBuffer,
-    ContentType: mimeType, // Dynamically set the content type based on file MIME type
-    ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
-  };
+// const uploadToS3 = async (fileBuffer, bucketName, key, mimeType) => {
+//   const uploadParams = {
+//     Bucket: bucketName,
+//     Key: key,
+//     Body: fileBuffer,
+//     ContentType: mimeType, // Dynamically set the content type based on file MIME type
+//     ContentDisposition: 'inline' // Ensure the file is displayed inline in the browser
+//   };
 
-  // Using the Upload class to handle large file uploads
-  const parallelUploads3 = new Upload({
-    client: s3Client,
-    params: uploadParams,
-  });
+//   // Using the Upload class to handle large file uploads
+//   const parallelUploads3 = new Upload({
+//     client: s3Client,
+//     params: uploadParams,
+//   });
 
-  return parallelUploads3.done();
-};
+//   return parallelUploads3.done();
+// };
 
 
 // Configure Multer storage
@@ -133,7 +133,7 @@ router.post('/register',authIslogin, UserController.adduser)
 router.get('/api/allusers',authIslogin,UserController.getAllUsers) ;
 router.post('/update-user',authIslogin,UserController.updateUserInfo) ;
 // router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
-router.post("/upload-files/:companyId/:userId",authIslogin, upload.single("file"), UserController.update_user_profile);
+router.post("/upload-files/:companyId/:userId", upload.single("file"), UserController.update_user_profile);
 router.post('/upload-video',authIslogin,upload.single("videoName"), UserController.uploadVideo );
 
 
