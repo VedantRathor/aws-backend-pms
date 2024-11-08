@@ -14,8 +14,8 @@ const client = new Client(OCTO_TOKEN);
 const router = express.Router();
 const bodyParser = require('body-parser');
 
-const db = require('../models/index');
-const userinfo = db.userinfo;
+// const db = require('../models/index');
+// const userinfo = db.userinfo;
 // const aws = require('aws-sdk');
 // const multer = require('multer');
 // const multerS3 = require('multer-s3');
@@ -133,52 +133,7 @@ router.post('/register',authIslogin, UserController.adduser)
 router.get('/api/allusers',authIslogin,UserController.getAllUsers) ;
 router.post('/update-user',authIslogin,UserController.updateUserInfo) ;
 // router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
-router.post("/upload-files/:companyId/:userId",authIslogin, upload.single("file"), async (req, res) => {
-    try {
-      // Validate inputs
-      const {companyId , userId } = req.params;
-      if (!companyId || !userId || !req.file) {
-        return res.status(400).json({ message: "Invalid input data" });
-      }
-  
-      // Determine folder based on file MIME type
-      const fileCategory = getFolderPathByMimeType(req.file.mimetype);
-      const folderPath = `s3-storage/company/${companyId}/users/${userId}/${fileCategory}`;
-  
-      // Unique file name with timestamp to avoid overwriting
-      const uniqueName = `${Date.now()}-${req.file.originalname}`;
-      const fullPath = `${folderPath}/${uniqueName}`;
-  
-      // Upload file to S3 with dynamically set MIME type
-      await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
-  
-      const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
-    //   let profileImage = req.file ? req.file.filename : null;
-    // want to perfom updating ! 
-      const user = await userinfo.findOne({ where: { company_id : companyId, user_id : userId } });
-      if(user){
-          await userinfo.update({
-              profile: fileUrl // Save the filename in the database
-          }, {
-              where: {
-                  user_id: user.user_id,
-                  company_id: companyId
-              }
-          });
-        res.json({
-            status: "success",
-            message: `${fileUrl} successfully uploaded!`,
-            fileUrl,
-          });
-      }else{
-        service.serverSideError(res);
-      }
-      
-    } catch (error) {
-      console.error("Error uploading file to S3:", error);
-      res.status(500).json({ message: "File upload failed" });
-    }
-  });
+router.post("/upload-files/:companyId/:userId",authIslogin, upload.single("file"), UserController.update_user_profile);
 router.post('/upload-video',authIslogin,upload.single("videoName"), UserController.uploadVideo );
 
 
