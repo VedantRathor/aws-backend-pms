@@ -342,33 +342,36 @@ const update_user_profile = async (req, res) => {
                msg : process.env.BUCKET_NAME
           })
       }else {
-    await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
+          res.json({
+              msg :  process.env.BUCKET_NAME
+          });
+    // await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
 
-    const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
-      console.log('>>>>>>',process.env.BUCKET_NAME);
-    console.log("File successfully uploaded, URL:", fileUrl);
+    // const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
+    //   console.log('>>>>>>',process.env.BUCKET_NAME);
+    // console.log("File successfully uploaded, URL:", fileUrl);
 
-    const user = await userinfo.findOne({ where: { company_id: companyId, user_id: userId } });
-    if (user) {
-      await userinfo.update(
-        {
-          profile: fileUrl // Save the filename in the database
-        },
-        {
-          where: {
-            user_id: user.user_id,
-            company_id: companyId
-          }
-        }
-      );
-      res.json({
-        status: "success",
-        message: `${fileUrl} successfully uploaded!`,
-        fileUrl,
-      });
-    } else {
-      res.status(500).json({ message: "User not found in database" });
-    }
+    // const user = await userinfo.findOne({ where: { company_id: companyId, user_id: userId } });
+    // if (user) {
+    //   await userinfo.update(
+    //     {
+    //       profile: fileUrl // Save the filename in the database
+    //     },
+    //     {
+    //       where: {
+    //         user_id: user.user_id,
+    //         company_id: companyId
+    //       }
+    //     }
+    //   );
+    //   res.json({
+    //     status: "success",
+    //     message: `${fileUrl} successfully uploaded!`,
+    //     fileUrl,
+    //   });
+    // } else {
+    //   res.status(500).json({ message: "User not found in database" });
+    // }
   }      
   } catch (error) {
     console.error("Error uploading file to S3:", error);
