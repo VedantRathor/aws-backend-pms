@@ -337,6 +337,11 @@ const update_user_profile = async (req, res) => {
     console.log(`Attempting to upload file to S3 bucket with path: ${fullPath}`);
 
     // Upload file to S3 with dynamically set MIME type
+      if( !process.env.BUCKET_NAME ){
+          res.json({
+               msg : process.env.BUCKET_NAME
+          })
+      }else {
     await uploadToS3(req.file.buffer, process.env.BUCKET_NAME, fullPath, req.file.mimetype);
 
     const fileUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.REGION}.amazonaws.com/${fullPath}`;
@@ -364,6 +369,7 @@ const update_user_profile = async (req, res) => {
     } else {
       res.status(500).json({ message: "User not found in database" });
     }
+  }      
   } catch (error) {
     console.error("Error uploading file to S3:", error);
     res.status(500).json({ message: "File upload failed" });
