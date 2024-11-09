@@ -286,7 +286,7 @@ const getMemberByproject_idNotInvolved = async (req, res) => {
         const result = await db.sequelize.query(`
             SELECT t.* 
             FROM (
-                SELECT u.user_id, u.name, COUNT(a.user_id) AS ct 
+                SELECT u.user_id, u.name, COUNT(a.user_id) AS ct , u.profile
                 FROM userinfos u 
                 LEFT JOIN assignments a 
                 ON u.user_id = a.user_id 
