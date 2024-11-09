@@ -132,7 +132,8 @@ router.post('/update-user',authIslogin,UserController.updateUserInfo) ;
 // router.post('/update-user-profile',authIslogin,upload.single("profileImage"),UserController.update_user_profile) ;
 router.post("/upload-files/:companyId/:userId",authIslogin, upload.single("file"), UserController.update_user_profile);
 router.post('/upload-video',authIslogin,upload.single("videoName"), UserController.uploadVideo );
-
+router.get('/api/client-data-by-projectId/:projectID',authIslogin,UserController.getClientsDataByProjectId);
+router.get('/api/get-clients-by-project-id/:project_id',authIslogin,UserController.getAllClientsByCompanyID );
 
 //ProjectController
 router.post('/add-new-project',authIslogin,ProjectController.addNewProject);

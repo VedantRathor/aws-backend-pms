@@ -49,6 +49,11 @@ module.exports = {
       company_id : {
         allowNull : false,
         type: Sequelize.INTEGER
+      },
+      is_client: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0, // Sets the default value to 0
+        allowNull: false
       }
     });
   },

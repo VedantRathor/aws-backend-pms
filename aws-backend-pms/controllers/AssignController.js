@@ -18,7 +18,7 @@ const assignMembers = async (req, res) => {
     try {
         const userdata = res.locals.user
         const {company_id} = userdata;
-        const assigner = userdata.user_id
+        const assigner = userdata.user_id;
 
         if (userdata != null && (userdata.role == 1 || userdata.role == 2)) {
             const result = await assignment.createAssignment(req.body, assigner,company_id);

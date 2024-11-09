@@ -1,9 +1,10 @@
 'use strict';
 const {
   Model,
-  INTEGER
+  INTEGER,
+  QueryTypes
 } = require('sequelize');
-
+const db = require('../models/index');
 module.exports = (sequelize, DataTypes) => {
   class userinfo extends Model {
 
@@ -23,10 +24,11 @@ module.exports = (sequelize, DataTypes) => {
         name: name,
         password: password,
         email: email,
-        role: Number(role),
+        role: +role == 4 ? 2 :  Number(role),
         created_by: created_by,
         token: token,
-        company_id:company_id
+        company_id:company_id,
+        is_client : +role == 4 ? 1 : 0
       })
     }
 
@@ -47,8 +49,11 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     static getManagers(company_id){
-      return userinfo.findAll({ where: { role: 2 , company_id : company_id}, attributes: ['user_id', 'name','profile'] })
+      return userinfo.findAll({ where: { role: 2 , is_client : 0,  company_id : company_id}, attributes: ['user_id', 'name','profile'] })
     }
+
+    
+
     static associate(models) {
       // define association here
     }
@@ -78,6 +83,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false  // or allowNull: true if it is optional
     },
+    is_client: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0, // Sets the default value to 0
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'userinfo',

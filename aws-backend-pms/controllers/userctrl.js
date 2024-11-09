@@ -36,7 +36,7 @@ const adduser = async (req, res) => {
         const userdata = res.locals.user ;
         const { user_id, company_id} = userdata ;
         const {  email, password, ucpassword , name } = req.body;
-        console.log(req.body)
+        // console.log(req.body)
         // FindUser - finds the user if having email already
         const emailExists = await userinfo.FindUser(email);
         if (emailExists == null) {
@@ -186,7 +186,17 @@ const { userName, userOrder, userRole } = req.query;
 
         // If userRole is provided, add a role filter
         if (userRole) {
-            userWhereClause.role = +userRole;
+            if( +userRole === 4 ){
+                userWhereClause.is_client = 1 ;
+            }
+            else if(+userRole === 2){
+                userWhereClause.role = +userRole;
+                userWhereClause.is_client = 0 ;
+            }
+            else{
+                userWhereClause.role = +userRole;
+            }
+            
         }
 
         // Build the order array based on userOrder
@@ -202,7 +212,7 @@ const { userName, userOrder, userRole } = req.query;
         // Execute the query
         const result = await userinfo.findAll({
             where: userWhereClause,
-            attributes: ['name', 'email', 'created_at', 'updated_at', 'role', 'user_id', 'profile', 'company_id'], // Select specific attributes
+            attributes: ['name', 'email', 'created_at', 'updated_at', 'role', 'user_id', 'profile', 'company_id','is_client'], // Select specific attributes
             order: orderClause
         });
    
@@ -390,6 +400,73 @@ const update_user_profile = async (req, res) => {
 //     }
 // }
 
+const getClientsDataByProjectId = async (req,res) => {
+    try {
+        const userdata = res.locals.user;
+        const {user_id , company_id } = userdata;
+        const {projectID} = req.params ;
+        const project_id = projectID;
+        // const clientData = await userinfo.getClientData(user_id,company_id,projectID);
+        let query = `
+        SELECT ui.user_id, ui.name, ui.email, ui.profile
+        FROM assignments a 
+        INNER JOIN  userinfos ui 
+        ON a.user_id = ui.user_id AND a.company_id = ui.company_id 
+        WHERE a.company_id = :company_id 
+          AND a.project_id = :project_id
+          AND ui.is_client = 1
+        ;  
+       `
+       const result =  await db.sequelize.query(query, {
+         replacements: { company_id, project_id },
+         type: QueryTypes.SELECT
+       });
+        service.successRetrievalResponse(res,"client data retrieved",result);
+
+    } catch (error) {
+        console.log('error: ',error);
+        service.serverSideError(res);
+    }
+}
+
+const getAllClientsByCompanyID = async (req,res) => {
+    try {
+        const userdata = res.locals.user ;
+        const {user_id,role,company_id} = userdata;
+        const {project_id} = req.params;
+
+        let query = `
+                        SELECT t.* 
+                        FROM 
+                        (SELECT user_id, name, email, role, created_by, created_at, updated_at, profile, company_id, is_client
+                        FROM userinfos
+                        WHERE company_id = :company_id AND is_client = 1 AND deleted_at IS NULL) as t 
+                        WHERE t.user_id NOT IN (
+                        SELECT  ui.user_id
+                            FROM assignments a 
+                            INNER JOIN  userinfos ui 
+                            ON a.user_id = ui.user_id AND a.company_id = ui.company_id 
+                            WHERE a.company_id = :company_id AND a.project_id = :project_id AND ui.is_client = 1 
+                        );
+ 
+                     `
+
+        const allClientsOfCompany = await db.sequelize.query(query,{
+            replacements : {
+                company_id : company_id,
+                project_id : project_id
+            },
+            type : QueryTypes.SELECT 
+        });
+
+        
+        service.successRetrievalResponse(res,"all clients retrieved",allClientsOfCompany);
+    } catch (error) {
+        console.log('error: ',error);
+        service.serverSideError(res);
+    }
+}
+
 module.exports = {
     adduser,
     loginUserByEmailPass,
@@ -398,5 +475,7 @@ module.exports = {
     getAllUsers,
     updateUserInfo,
     update_user_profile,
-    uploadVideo
+    uploadVideo,
+    getClientsDataByProjectId,
+    getAllClientsByCompanyID
 }

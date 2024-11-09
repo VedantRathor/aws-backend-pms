@@ -1,6 +1,6 @@
 const { Model, QueryTypes, where } = require('sequelize')
 const express = require('express');
-const db = require('../models/index')
+const db = require('../models/index');
 const { Op } = require('sequelize')
 const userinfo = db.userinfo
 const project = db.project
@@ -147,7 +147,7 @@ const updateProjectStatus = async (req, res) => {
 const getProjectBymanager_id = async (req, res) => {
     try {
         const userdata = res.locals.user;
-        const { user_id, name, role ,company_id} = userdata
+        const { user_id, name, role ,company_id,is_client} = userdata;
         let query = {
             include: [{ model: userinfo, attributes: ['name'] }],
         }
@@ -155,14 +155,14 @@ const getProjectBymanager_id = async (req, res) => {
             if( role == 1){
                 query.where = { company_id};
             }
-            if (role == 2) {
+            if (role == 2 && !is_client ) {
                 // where condition - manager_id = user_id
                 query.where = { manager_id: user_id , company_id:company_id};
             }
             const result = await project.findAll(query);
             console.log('result',result);
             service.successRetrievalResponse(res, 'projects retrieved', result)
-        } else if (role == 3) {
+        } else if (role == 3 || is_client) {
             // user hasMany assignments, ass belongs to a project
             const result = await project.employeeFindAll(userinfo, assignment, user_id,company_id)
             service.successRetrievalResponse(res, 'project data retrieved', result)
