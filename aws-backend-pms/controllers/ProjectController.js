@@ -151,7 +151,7 @@ const getProjectBymanager_id = async (req, res) => {
         let query = {
             include: [{ model: userinfo, attributes: ['name'] }],
         }
-        if (role == 1 || role == 2) {
+        if (role == 1 || (role == 2 && !is_client) ) {
             if( role == 1){
                 query.where = { company_id};
             }
